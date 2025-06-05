@@ -8,10 +8,14 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(__dirname));
 
 app.get('/list-chantier', (req, res) => {
-  const dossier = path.join(__dirname, 'chantiers');
+  const chantierPath = path.join(__dirname, 'chantiers');
   fs.readdir(dossier, (err, fichiers) => {
     if (err) return res.status(500).json({ error: 'Erreur' });
-    res.json(fichiers.filter(f => fs.statSync(path.join(dossier, f)).isFile()));
+    const dossiers = elements.filter(el => 
+    fs.statSync(path.join(chantierPath, el)).isDirectory()
+  );
+
+  res.json(dossiers);
   });
 });
 
