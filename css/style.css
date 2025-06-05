@@ -1,0 +1,172 @@
+html,
+body {
+  height: 100%
+}
+
+body {
+  font-family: calibri, sans-serif;
+  font-size: 16px;
+  margin: 0px;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #0055a0;
+  color: #ffd800;
+  transform: translateY(-4px);
+  transition: all 0.2s ease;
+}
+
+#logo-razel {
+  width: 170px;
+}
+
+
+/* Styles pour l'entête */
+.site-header {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  background: #f5f5f5;
+  padding: 1rem 0rem;
+  flex-direction: row;
+  text-align: center;
+  font-family: 'calibri';
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.site-header h1 {
+  font-size: 24px;
+  margin: 0 0 0.5rem;
+  color: #1f2937;
+}
+
+.site-header p {
+  font-size: 16px;
+  margin: 0;
+  color: #1f2937;
+}
+
+/* Mode téléphone (écran max 600px) */
+@media (max-width: 600px) {
+  .container {
+    flex-wrap: wrap;
+    /* autorise le retour à la ligne */
+    justify-content: center;
+  }
+
+  #logo-razel {
+    width: 120px;
+  }
+
+  .site-header h1 {
+    font-size: 22px;
+  }
+
+  .site-header p {
+    font-size: 14px;
+  }
+}
+
+/* Mode tablette (écran max 1300px) */
+@media (max-width: 1300px) {
+  .container {
+    flex-wrap: wrap;
+    /* autorise le retour à la ligne */
+    justify-content: center;
+  }
+
+  .box {
+    flex: 0 1 45%;
+    /* 2 par ligne de manière fiable */
+    width: auto;
+    /* width auto pour que flex-basis prenne le dessus */
+    margin-bottom: 20px;
+
+  }
+}
+
+
+.container {
+  flex: 20;
+  display: flex;
+  margin: 0px 5px;
+  justify-content: center;
+  align-items: center;
+
+}
+
+.box {
+  width: 200px;
+  height: 200px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #333;
+  margin: 0px 10px;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.box i {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.box span {
+  text-align: center;
+  /* Centrage du texte */
+  display: block;
+  /* Important pour que le centrage marche */
+}
+
+.box:hover {
+  background-color: #0055a0;
+  color: #ffd800;
+  transform: translateY(-10px);
+}
+
+.icon-image:hover {
+  color: #0055a0;
+  /* Couleur bleue au survol */
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+}
+
+input[type="text"],
+datalist {
+  width: 300px;
+  padding: 5px;
+}
+
+
+.drop-zone {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  margin-top: 20px;
+  cursor: pointer;
+  width: 620px;
+}
+
+.drop-zone:hover {
+  color: #0055a0;
+  font-weight: bold;
+  transform: translateY(-1px);
+}
+
+#logoEnterprise {
+  margin: 0px 20px;
+}
