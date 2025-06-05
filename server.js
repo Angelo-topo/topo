@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static('chantiers'));
+app.use(express.static('choix_users'));
 
 app.get('/list-chantier', (req, res) => {
   const dossier = path.join(__dirname, 'chantiers');
