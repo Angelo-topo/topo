@@ -60,7 +60,7 @@
     fetch('/list-chantier')
       .then(response => response.json())
       .then(fichiers => {
-        optionsData = data;
+        optionsData = fichiers;
         remplirListe(optionsData);
       })
       .catch(console.error);
