@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Choix PDF - Razel-Bec</title>
+  <link rel="icon" href="/images/logo-fayat-diamond.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  </script>
+
+  <style>
+    option,
+    select {
+      font-family: calibri;
+      font-size: large;
+    }
+
+    #pdfPreview {
+      width: 1100px;
+      height: 600px;
+    }
+
+    /* Pour les écrans intermédiaires, style tablette par exemple */
+    @media (max-width: 1200px) {
+      #pdfPreview {
+        width: 800px;
+        height: 450px;
+      }
+    }
+
+    /* Pour les écrans de moins de 800px (téléphone) */
+    @media (max-width: 800px) {
+      #pdfPreview {
+        width: 400px;
+        height: 400px;
+      }
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div style="flex: 1;align-content: center;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+    <div style="flex: 20;align-content: center;">
+      <h1 id="titreChantier"></h1>
+      <p>PDFs</p>
+    </div>
+    <div style="flex: 1;opacity: 0;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+  </header>
+
+  <div class="container" style="flex-direction: column;">
+    <div style="display: flex;flex-direction: column;align-items: center;">
+      <h3>Choisissez un PDF :</h3>
+      <!-- Barre de recherche -->
+      <input type="text" id="searchBar" placeholder="Rechercher..."
+        style="margin-bottom: 20px; padding: 5px; width: 400px">
+      <select id="ListePDF"></select>
+
+      <div style="margin-top: 30px; display: flex; gap: 20px;">
+        <button id="previewButton" style="padding: 15px; cursor: pointer;">
+          Preview
+        </button>
+
+        <button id="openButton" style="padding: 15px; cursor: pointer;">
+          Ouvrir dans un nouvel onglet
+        </button>
+      </div>
+      <div id="previewContainer" style="margin-top: 30px; width: auto; height: auto; display: none;">
+        <iframe id="pdfPreview" frameborder="0"></iframe>
+      </div>
+    </div>
+</body>
+
+</html>
+
+<script>
+  function getChantier() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('chantier') || '';
+  }
+
+  const chantier = getChantier();
+  document.getElementById('titreChantier').textContent = chantier ? chantier : 'Aucun chantier sélectionné';
+
+  const ListePDF = document.getElementById("ListePDF");
+  let listePDFsData = [];
+
+  // Charger la liste initiale
+  $.getJSON(`/chantiers/${chantier}/PDF`, data => {
+    listePDFsData = data;
+    remplirListe(listePDFsData);
+  });
+
+  function remplirListe(data) {
+    ListePDF.innerHTML = "";
+    data.forEach(element => {
+      const option = document.createElement("option");
+      option.value = element;
+      option.textContent = element;
+      ListePDF.appendChild(option);
+    });
+  }
+
+  // Filtrer la liste en direct
+  document.getElementById("searchBar").addEventListener("input", function () {
+    const filtre = this.value.toLowerCase();
+    const resultatFiltre = listePDFsData.filter(item => item.toLowerCase().includes(filtre));
+    remplirListe(resultatFiltre);
+  });
+
+  // Ouvrir le PDF choisi
+  document.getElementById('openButton').addEventListener('click', function () {
+    const pdfChoisi = ListePDF.value;
+    if (pdfChoisi) {
+      const pdfUrl = `/chantiers/${chantier}/PDF/${encodeURIComponent(pdfChoisi)}`;
+      window.open(pdfUrl, '_blank');
+    } else {
+      alert('Merci de choisir un PDF !');
+    }
+  });
+
+  // Bouton Preview : affiche l'aperçu
+  document.getElementById('previewButton').addEventListener('click', function () {
+    const pdfChoisi = ListePDF.value;
+    if (pdfChoisi) {
+      const pdfUrl = `/chantiers/${chantier}/PDF/${encodeURIComponent(pdfChoisi)}`;
+      document.getElementById('pdfPreview').src = pdfUrl;
+      document.getElementById('previewContainer').style.display = 'block';
+    } else {
+      alert('Merci de choisir un PDF !');
+    }
+  });
+
+</script>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Menu - Razel-Bec</title>
+  <link rel="icon" href="/images/logo-fayat-diamond.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div style="flex: 1;align-content: center;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+
+    </div>
+    <div style="flex: 20;align-content: center;">
+      <h1>Menu</h1>
+      <p id="titreChantier"></p>
+    </div>
+    <div style="flex: 1;opacity: 0;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+
+  </header>
+
+  <script>
+    function getChantier() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('chantier') || '';
+    }
+  </script>
+
+
+
+  <div class="container">
+    <a class="box" id="lienInfos" href="./informations/" alt="Info">
+      <i class="material-icons-outlined" style="font-size:80px;">info</i>
+      <span style="margin-top: 2px;">Informations</span>
+    </a>
+
+    <a class="box" id="lienPDF" href="./choix_PDF/" alt="PDF">
+      <i class="fa-regular fa-file-pdf" style="font-size:65px;"></i>
+      <span style="margin-top: 14px;">PDF</span>
+    </a>
+
+    <a class="box" id="lienViewer" href="/chantiers/${chantier}/Viewer/lien_viewer.txt" target="_blank" alt="Viewer 3D">
+      <i class="material-icons-outlined" style="font-size:85px;">architecture</i>
+      <span style="margin-top: 2px;">Viewer 3D (usBIM)</span>
+    </a>
+
+    <a class="box" id="lienARmarker" href="./AR_marker/"
+      target="_blank" alt="View in ar">
+      <i class="material-icons-outlined" style="font-size:75px;">view_in_ar</i>
+      <span style="margin-top: 8px;">Réalité Augmentée sur marqueur</span>
+    </a>
+
+    <a class="box" id="lienAR360" href="./AR_360/" target="_blank" alt="Rotation 3D">
+      <i class="material-icons-outlined" style="font-size:70px;">3d_rotation</i>
+      <span style="margin-top: 10px;">Réalité Augmentée 1:1</span>
+    </a>
+
+    <a class="box" href="https://razel-bec.fayat.com/" target="_blank" alt="RZB">
+      <img src="/images/logo-fayat-diamond.png" style="width: 70px; display: block; margin: 0 auto;"
+        alt="Logo Razel-Bec" />
+      <span style="display: block; margin-top: 18px; text-align: center;">Site Razel-Bec</span>
+    </a>
+  </div>
+
+  <div>
+    <input type="checkbox" id="Activate" />
+  </div>
+
+  <p id="chantierTitre"></p>
+
+  <script>
+    const chantier = getChantier();
+    document.getElementById('titreChantier').textContent = chantier ? `${chantier}` : 'Aucun chantier sélectionné';
+
+    // Met à jour dynamiquement le lien
+    document.getElementById('lienInfos').href = `./informations/?chantier=${encodeURIComponent(chantier)}`;
+    document.getElementById('lienPDF').href = `./choix_PDF/?chantier=${encodeURIComponent(chantier)}`;
+    document.getElementById('lienARmarker').href = `./AR_marker/?chantier=${encodeURIComponent(chantier)}`;
+    document.getElementById('lienAR360').href = `./AR_360/?chantier=${encodeURIComponent(chantier)}`;
+
+    // Nouveau lien dynamique pour le Viewer 3D
+    const viewerLink = document.getElementById('lienViewer');
+    if (chantier) {
+      fetch(`/chantiers/${chantier}/Viewer/lien_viewer.txt`)
+        .then(response => response.text())
+        .then(url => {
+          if (url.trim()) {
+            viewerLink.href = url.trim();
+          }
+        })
+        .catch(err => console.error('Erreur lors de la lecture du lien Viewer:', err));
+    }
+
+    // Vérifie l'existence de certains dossiers avant d'afficher les icônes
+    const elementsToCheck = [
+      { id: 'lienInfos', path: `/chantiers/${chantier}/Infos` },
+      { id: 'lienPDF', path: `/chantiers/${chantier}/PDF` },
+      { id: 'lienViewer', path: `/chantiers/${chantier}/Viewer` },
+      { id: 'lienARmarker', path: `/chantiers/${chantier}/OBJ_model` },
+      { id: 'lienAR360', path: `/chantiers/${chantier}/OBJ_model` },
+    ];
+
+    elementsToCheck.forEach(item => {
+      if (chantier) {
+        fetch(item.path, { method: 'HEAD' }) // HEAD = on ne télécharge pas, juste vérifier l'existence
+          .then(response => {
+            if (!response.ok) {
+              document.getElementById(item.id).style.display = 'none';
+            }
+          })
+          .catch(err => {
+            console.error(`Erreur lors de la vérification de ${item.path}:`, err);
+            document.getElementById(item.id).style.display = 'none';
+          });
+      } else {
+        document.getElementById(item.id).style.display = 'none';
+      }
+    });
+
+    // Bouton apparition
+
+    var bouton = document.getElementById('Activate');
+
+    bouton.addEventListener("click", updateDisplay);
+
+    function updateDisplay(e) {
+
+      elementsToCheck.forEach(item => {
+        if (!e.target.checked) {
+          if (chantier) {
+        fetch(item.path, { method: 'HEAD' }) // HEAD = on ne télécharge pas, juste vérifier l'existence
+          .then(response => {
+            if (!response.ok) {
+              document.getElementById(item.id).style.display = 'none';
+            }
+          })
+          .catch(err => {
+            console.error(`Erreur lors de la vérification de ${item.path}:`, err);
+            document.getElementById(item.id).style.display = 'none';
+          });
+      } else {
+        document.getElementById(item.id).style.display = 'none';
+      }
+        } else {
+          document.getElementById(item.id).style.display = '';
+        }
+      }
+      )
+    }
+
+  </script>
+
+
+</body>
+
+</html>

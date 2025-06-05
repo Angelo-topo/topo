@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Viewer AR - Razel-Bec</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <link rel="icon" href="/images/logo-fayat-diamond.png">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- A-Frame and AR.js components -->
+  <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+  <script>
+    // Restores THREE.Math for AR.js
+    if (THREE.Math === undefined && THREE.MathUtils) {
+      THREE.Math = THREE.MathUtils;
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.0/aframe/build/aframe-ar.js"></script>
+  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+  <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.loaders.min.js"></script>
+  <script src="js/orbit-controls.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/model-loader.js"></script>
+</head>
+
+<body>
+
+  <header class="site-header" style="position:absolute; top:0px; left: 0px">
+    <div style="flex: 1;align-content: center;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+
+    </div>
+    <div style="flex: 20;align-content: center;">
+      <h1>Viewer Réalité Augmentée</h1>
+      <p>Visualisez votre modèle en réalité augmentée. Vous pouvez visualier l'objet géoréférencé ou le placer.</p>
+    </div>
+    <div style="flex: 1;opacity: 0;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+  </header>
+
+  <!-- Direction arrow element -->
+  <div id="direction-arrow"></div>
+  <!-- Loading indicator -->
+  <div class="arjs-loader" id="loading-screen">
+    Recherche GPS & chargement...
+  </div>
+
+  <!-- UI Container for all panels -->
+  <div id="ui-container">
+    <!-- Control Panel at bottom left -->
+    <div id="control-panel" class="ui-panel">
+      <h4>Paramètres du modèle</h4>
+
+      <!-- Model selection dropdown (replaces format buttons) -->
+      <div class="model-switcher">
+        <h4 style="margin: 5px 0;">Selection le modèle </h4>
+        <select id="model-selector" class="btn"></select>
+      </div>
+
+      <!-- Model visibility toggle -->
+      <div class="toggle-container">
+        <label for="toggleModel">Afficher modèle:</label>
+        <input type="checkbox" id="toggleModel" checked>
+      </div>
+
+      <!-- Layer Manager -->
+      <div id="layer-manager">
+        <h4 style="margin: 5px 0;">Calques</h4>
+        <div id="layer-list"></div>
+      </div>
+
+      <!-- Scale control slider -->
+      <div class="scale-control">
+        <label for="scaleSlider">Echelle: <span id="scaleValue">1.0</span>x</label>
+        <input type="range" id="scaleSlider" min="0.1" max="5" step="0.1" value="1.0" class="slider">
+      </div>
+
+      <!-- Placement mode switch -->
+      <div class="placement-mode">
+        <button id="auto-placement" class="active">Auto</button>
+        <button id="manual-placement">Manuel</button>
+      </div>
+      <button id="place-coordinates-btn" class="btn" style="display: block;">Ajouter coordonnées</button>
+      <!-- Place model button (for manual placement) -->
+      <button id="place-model-btn" class="btn" style="display: none;">Cliquez pour ajouter le modèle</button>
+    </div>
+
+    <!-- Info Panels at bottom right -->
+    <div id="info-panel-container">
+      <!-- GPS Information at bottom -->
+      <div id="gps-panel" class="ui-panel">
+        <h4>Information GPS</h4>
+        <div id="coords" class="coords-display">Chargrment données GPS ...</div>
+      </div>
+
+      <!-- Model Information above GPS -->
+      <div id="model-info-panel" class="ui-panel">
+        <h4>Informations du modèle</h4>
+        <div id="model-coords" class="coords-display">Chargement données modèle...</div>
+        <h4>Distance</h4>
+        <div id="distance-display">Distance calculée ...</div>
+      </div>
+
+      <!-- Orbit Controls Info Panel -->
+      <div id="orbit-controls-panel" class="ui-panel">
+        <h4>Contrôle de l'orbit</h4>
+        <div id="orbit-controls-info">
+          ⦿ 1 doigt : Rotation<br>
+          ⦿ 2 doigts : Zoom avant/arrière
+        </div>
+      </div>
+
+      <!-- Project Information at top -->
+      <div id="info-panel" class="ui-panel">
+        <h4>Information projet</h4>
+        <div id="project-info">
+          Nom: variable<br>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compass at top right -->
+    <div id="compass">
+      <img src="/images/compass.png" alt="Compass" id="compass-img">
+    </div>
+
+    <!-- Add dropdown buttons below the panels -->
+    <button id="control-panel-btn" class="dropdown-btn left">
+      Paramètres <span class="arrow">▼</span>
+    </button>
+    <button id="info-panel-btn" class="dropdown-btn right">
+      Informations <span class="arrow">▼</span>
+    </button>
+
+  </div>
+
+  <!-- Add coordinates panel HTML before the AR scene -->
+  <div id="coordinates-panel" class="ui-panel">
+    <h4>Entrer les coordonnées du modèle </h4>
+    <div class="coordinate-input">
+      <label for="latitude">Latitude:</label>
+      <input type="number" id="latitude" step="any" placeholder="Enter latitude">
+    </div>
+    <div class="coordinate-input">
+      <label for="longitude">Longitude:</label>
+      <input type="number" id="longitude" step="any" placeholder="Enter longitude">
+    </div>
+    <div class="coordinate-input">
+      <label for="altitude">Altitude (metres):</label>
+      <input type="number" id="altitude" step="any" placeholder="Enter altitude">
+    </div>
+    <button id="confirm-coordinates" class="btn">Placer modèle</button>
+  </div>
+
+  <!-- AR scene with geolocation -->
+  <a-scene embedded vr-mode-ui="false" arjs="sourceType: webcam; debugUIEnabled: false;">
+    <a-entity id="model" position="0 0 0" scale="0.5 0.5 0.5" rotation="0 0 0" visible="false" follow-camera>
+    </a-entity>
+    <a-camera gps-camera="gpsMinDistance: 1" look-controls-enabled="true" arjs-look-controls="smoothingFactor: 0.1"
+      rotation-reader
+      orbit-controls="target: #model; enabled: true; minDistance: 0.5; maxDistance: 10; rotateSpeed: 15; zoomSpeed: 1.0;">
+    </a-camera>
+  </a-scene>
+
+  <script>
+    // Global variables for tracking state
+    let currentPosition = { ...MODEL_CONFIG.DEFAULT_COORDINATES };
+    let modelPosition = { ...MODEL_CONFIG.DEFAULT_COORDINATES };
+    let isManualPlacement = false;
+    let isModelVisible = true;
+    let isModelPlaced = false;
+    let modelLoader = null;
+    let cameraHeading = 0;
+    let userScaleFactor = MODEL_CONFIG.UI_SETTINGS.SCALE_SLIDER.DEFAULT;
+    let lastGPSUpdate = 0;
+    let gpsAccuracy = 0;
+    let isUserPlacedCoordinates = false;
+    let hasInitialGPSUpdate = false;  // New flag to track first GPS update
+    let modelNodes = new Map(); // Store model nodes and their visibility state
+
+    // Constants for GPS stability
+    const GPS_UPDATE_INTERVAL = MODEL_CONFIG.GPS_SETTINGS.UPDATE_INTERVAL;
+    const MIN_GPS_ACCURACY = MODEL_CONFIG.GPS_SETTINGS.MIN_ACCURACY;
+    const MODEL_OFFSET = MODEL_CONFIG.GPS_SETTINGS.MODEL_OFFSET;
+
+    // DOM Elements
+    let modelEl, loader, coordsEl, modelCoordsEl, distanceDisplay, placeModelBtn;
+    let autoPlacementBtn, manualPlacementBtn, toggleModelCheckbox, compassImg;
+    let arrowEl, scaleSliderEl, scaleValueEl, scaleSlider, scaleValueDisplay;
+    let coordinatesPanel, latitudeInput, longitudeInput, altitudeInput, confirmCoordinatesBtn;
+
+    // Function to hide loader
+    function hideLoader() {
+      if (loader) {
+        loader.classList.add('hidden');
+        // Completely remove from DOM after transition
+        setTimeout(() => {
+          if (loader) loader.style.display = 'none';
+        }, 600);
+      }
+    }
+
+    // Initialize DOM elements
+    function initializeDOMElements() {
+      modelEl = document.getElementById('model');
+      loader = document.getElementById('loading-screen');
+      coordsEl = document.getElementById('coords');
+      modelCoordsEl = document.getElementById('model-coords');
+      distanceDisplay = document.getElementById('distance-display');
+      placeModelBtn = document.getElementById('place-model-btn');
+      autoPlacementBtn = document.getElementById('auto-placement');
+      manualPlacementBtn = document.getElementById('manual-placement');
+      toggleModelCheckbox = document.getElementById('toggleModel');
+      compassImg = document.getElementById('compass-img');
+      arrowEl = document.getElementById('direction-arrow');
+      scaleSliderEl = document.getElementById('scaleSlider');
+      scaleValueEl = document.getElementById('scaleValue');
+      scaleSlider = document.getElementById('scaleSlider');
+      scaleValueDisplay = document.getElementById('scaleValue');
+      coordinatesPanel = document.getElementById('coordinates-panel');
+      latitudeInput = document.getElementById('latitude');
+      longitudeInput = document.getElementById('longitude');
+      altitudeInput = document.getElementById('altitude');
+      confirmCoordinatesBtn = document.getElementById('confirm-coordinates');
+
+      // Verify critical elements exist
+      if (!modelEl) console.error('Model element not found');
+      if (!loader) console.error('Loader element not found');
+      if (!coordsEl) console.error('Coordinates element not found');
+      if (!modelCoordsEl) console.error('Model coordinates element not found');
+      if (!distanceDisplay) console.error('Distance display element not found');
+    }
+
+    // Initialize the application
+    async function init() {
+      // Initialize DOM elements
+      initializeDOMElements();
+
+      // Initialize model loader
+      modelLoader = new ModelLoader().init(modelEl,getChantier());
+
+      // Wait for model loader to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Now populate the model selector
+      populateModelSelector();
+
+      // Set up event listeners
+      setupEventListeners();
+
+      // Start in automatic placement mode
+      setPlacementMode('auto');
+
+      // Load initial model
+      modelLoader.loadModel('obj-model');
+
+      // Listen for model ready event
+      document.addEventListener('model-ready', function () {
+        hideLoader();
+      });
+    }
+
+     function getChantier() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('chantier') || '';
+    }
+    // Set up all event listeners
+    function setupEventListeners() {
+      // Mode switching
+      autoPlacementBtn.addEventListener('click', () => setPlacementMode('auto'));
+      manualPlacementBtn.addEventListener('click', () => setPlacementMode('manual'));
+      // Manual placement
+      placeModelBtn.addEventListener('click', () => {
+        placeModelBtn.textContent = "Cliquez sur l'écran pour placer";
+        document.addEventListener('click', handleManualPlacement, { once: true });
+      });
+
+      // Model visibility toggle
+      toggleModelCheckbox.addEventListener('change', function (e) {
+        isModelVisible = e.target.checked;
+        modelLoader.toggleVisibility(isModelVisible);
+
+        // Also toggle visibility of orbit controls panel
+        const orbitPanel = document.getElementById('orbit-controls-panel');
+        if (orbitPanel) {
+          orbitPanel.style.display = isModelVisible ? 'block' : 'none';
+        }
+      });
+
+      // Scale slider control
+      const scaleSlider = document.getElementById('scaleSlider');
+      const scaleValue = document.getElementById('scaleValue');
+      if (scaleSlider) {
+        scaleSlider.addEventListener('input', function (e) {
+          const value = parseFloat(e.target.value);
+          scaleValue.textContent = value.toFixed(1);
+          userScaleFactor = value; // Update global scale factor
+          applyCustomScale(value);
+        });
+      }
+
+      // Screen orientation change handler
+      window.addEventListener('orientationchange', updateCompassOrientation);
+
+      // Update coordinate panel visibility based on placement mode
+      autoPlacementBtn.addEventListener('click', () => {
+        setPlacementMode('auto');
+        document.getElementById('coordinates-panel').style.display = 'none';
+      });
+
+      manualPlacementBtn.addEventListener('click', () => {
+        setPlacementMode('manual');
+        document.getElementById('coordinates-panel').style.display = 'block';
+      });
+
+      // Coordinates panel functionality
+      document.getElementById('place-coordinates-btn').addEventListener('click', () => {
+        coordinatesPanel.style.display = 'block';
+        // Pre-fill with current GPS coordinates if available
+        if (currentPosition.latitude !== 0) {
+          latitudeInput.value = currentPosition.latitude;
+          longitudeInput.value = currentPosition.longitude;
+          altitudeInput.value = currentPosition.altitude || 0;
+        }
+      });
+
+      confirmCoordinatesBtn.addEventListener('click', () => {
+        const lat = parseFloat(latitudeInput.value);
+        const lon = parseFloat(longitudeInput.value);
+        const alt = parseFloat(altitudeInput.value) || 0;
+
+        if (isNaN(lat) || isNaN(lon)) {
+          alert('Please enter valid coordinates');
+          return;
+        }
+
+        // Update model position with new coordinates
+        modelPosition.latitude = lat;
+        modelPosition.longitude = lon;
+        modelPosition.altitude = alt;
+
+        // Set flag to indicate user-provided coordinates
+        isUserPlacedCoordinates = true;
+
+        // Place model with entered coordinates
+        placeModelByGPS(lat, lon, alt, false);
+
+        // Force update model information immediately
+        setTimeout(() => {
+          updateModelInfo();
+        }, 100);
+
+        // Hide coordinates panel
+        coordinatesPanel.style.display = 'none';
+
+        // Clear inputs
+        latitudeInput.value = '';
+        longitudeInput.value = '';
+        altitudeInput.value = '';
+      });
+
+      // Close coordinates panel when clicking outside
+      document.addEventListener('click', (e) => {
+        if (coordinatesPanel.style.display === 'block' &&
+          !coordinatesPanel.contains(e.target) &&
+          e.target.id !== 'place-coordinates-btn') {
+          coordinatesPanel.style.display = 'none';
+        }
+      });
+
+      // Add model-loaded event listener
+      modelEl.addEventListener('model-loaded', () => {
+        // Initialize model nodes after model is loaded
+        initializeModelNodes();
+        // Ensure model visibility aligns with placement state after loading
+        modelEl.setAttribute('visible', isModelPlaced && isModelVisible);
+      });
+    }
+    // Switch between automatic and manual placement modes
+    function setPlacementMode(mode) {
+      isManualPlacement = (mode === 'manual');
+
+      // Update UI
+      autoPlacementBtn.classList.toggle('active', !isManualPlacement);
+      manualPlacementBtn.classList.toggle('active', isManualPlacement);
+      placeModelBtn.style.display = isManualPlacement ? 'block' : 'none';
+
+      // Show/hide coordinates button based on mode
+      document.getElementById('place-coordinates-btn').style.display = isManualPlacement ? 'none' : 'block';
+
+      // Reset model placement if switching to manual
+      if (isManualPlacement) {
+        modelLoader.toggleVisibility(false);
+        isModelPlaced = false;
+        isUserPlacedCoordinates = false;
+        updateModelInfo();
+      } else {
+        // When switching to auto, use the current user's location if available
+        if (currentPosition.latitude !== MODEL_CONFIG.DEFAULT_COORDINATES.latitude) {
+          placeModelByGPS(currentPosition.latitude, currentPosition.longitude, true);
+        } else {
+          // Fallback to default position if no GPS data is available yet
+          placeModelByGPS(modelPosition.latitude, modelPosition.longitude, false);
+        }
+        modelLoader.toggleVisibility(isModelVisible);
+        updateModelInfo();
+      }
+    }
+    // Place model using GPS coordinates
+    function placeModelByGPS(lat, lon, alt, useCurrentLocation = false) {
+      if (!modelLoader) {
+        return;
+      }
+
+      // Skip GPS updates if model was placed by user coordinates
+      if (isUserPlacedCoordinates && !useCurrentLocation) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastGPSUpdate < GPS_UPDATE_INTERVAL) {
+        return;
+      }
+      lastGPSUpdate = now;
+
+      if (useCurrentLocation && currentPosition.latitude !== 0) {
+        lat = currentPosition.latitude;
+        lon = currentPosition.longitude;
+        alt = parseFloat(currentPosition.altitude) || 0;
+        isUserPlacedCoordinates = false; // Reset flag when using current location
+      } else {
+        // If not using current location, these are user-provided coordinates
+        isUserPlacedCoordinates = true;
+      }
+
+      // Update model position
+      modelPosition.latitude = lat;
+      modelPosition.longitude = lon;
+      modelPosition.altitude = parseFloat(alt) || 0;
+
+      modelEl.removeAttribute('position');
+      modelEl.removeAttribute('follow-camera');
+
+      modelEl.setAttribute('gps-entity-place', `latitude: ${lat}; longitude: ${lon}`);
+
+      // Get camera rotation to make model face camera
+      const camera = document.querySelector('a-camera');
+      const cameraRotation = camera.getAttribute('rotation');
+
+      // Set model rotation to face camera
+      modelEl.setAttribute('rotation', `0 ${cameraRotation.y} 0`);
+
+      // Apply vertical offset to the model to lift it from the ground
+      // Use the same height offset as in manual mode for consistency
+      modelEl.setAttribute('position', `0 ${MODEL_OFFSET.height} 0`);
+
+      adjustModelScale();
+      modelEl.setAttribute('visible', true);
+      modelLoader.toggleVisibility(true);
+      isModelVisible = true;
+      isModelPlaced = true;
+
+      if (toggleModelCheckbox) {
+        toggleModelCheckbox.checked = true;
+      }
+
+      // Force update model information with a slight delay to ensure DOM updates
+      setTimeout(() => {
+        updateModelInfo();
+      }, 100);
+    }
+
+    // Handle manual placement
+    function handleManualPlacement(event) {
+      const modelEl = document.getElementById('model');
+      const camera = document.querySelector('a-camera');
+      const position = camera.getAttribute('position');
+      const rotation = camera.getAttribute('rotation');
+
+      // Calculate position with offset
+      const radians = rotation.y * (Math.PI / 180);
+      const x = position.x - Math.sin(radians) * MODEL_OFFSET.distance + Math.cos(radians) * MODEL_OFFSET.lateral;
+      const z = position.z - Math.cos(radians) * MODEL_OFFSET.distance - Math.sin(radians) * MODEL_OFFSET.lateral;
+      const y = position.y + MODEL_OFFSET.height;
+
+      // Remove GPS placement and set fixed position
+      modelEl.removeAttribute('gps-entity-place');
+      modelEl.setAttribute('position', `${x} ${y} ${z}`);
+
+      // Enable follow-camera component with offset
+      modelEl.setAttribute('follow-camera', {
+        distance: MODEL_OFFSET.distance,
+        height: MODEL_OFFSET.height,
+        lateral: MODEL_OFFSET.lateral,
+        enabled: true
+      });
+
+      adjustModelScale();
+      modelLoader.toggleVisibility(isModelVisible);
+      isModelPlaced = true;
+      updateModelInfo();
+    }
+
+    // Adjust model scale based on format and placement mode
+    function adjustModelScale() {
+      // Get format-specific scale from modelLoader
+      const currentFormat = modelLoader.currentFormat;
+      const formatScale = modelLoader.modelInfo[currentFormat]?.scale || '1 1 1';
+
+      // Parse the scale components
+      const [baseX, baseY, baseZ] = formatScale.split(' ').map(parseFloat);
+
+      // Apply scale factor based on placement mode and device
+      let scaleFactor = isManualPlacement ?
+        MODEL_CONFIG.SCALE_FACTORS.MANUAL :
+        MODEL_CONFIG.SCALE_FACTORS.GPS;
+
+      // Further reduce scale on mobile
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        scaleFactor *= MODEL_CONFIG.SCALE_FACTORS.MOBILE_REDUCTION;
+      }
+
+      // Calculate final scale
+      const finalScale = `${baseX * scaleFactor} ${baseY * scaleFactor} ${baseZ * scaleFactor}`;
+
+      // Apply scale to model
+      modelEl.setAttribute('scale', finalScale);
+
+      // Store the current base scale for use with the slider
+      window.currentBaseScale = { x: baseX * scaleFactor, y: baseY * scaleFactor, z: baseZ * scaleFactor };
+    }
+
+    // Apply custom scale from slider
+    function applyCustomScale(scaleFactor) {
+      if (!isModelPlaced || !modelEl) return;
+
+      // Use the base scale that was set by adjustModelScale
+      if (window.currentBaseScale) {
+        const { x, y, z } = window.currentBaseScale;
+
+        // Calculate final scale with user scaling factor
+        const finalScale = `${x * scaleFactor} ${y * scaleFactor} ${z * scaleFactor}`;
+
+        // Apply to model
+        modelEl.setAttribute('scale', finalScale);
+      } else {
+        // Fallback if base scale not set
+        const currentFormat = modelLoader.currentFormat;
+        const formatScale = modelLoader.modelInfo[currentFormat]?.scale || '1 1 1';
+
+        // Parse the scale components
+        const [baseX, baseY, baseZ] = formatScale.split(' ').map(parseFloat);
+
+        // Apply scaling factor based on placement mode
+        const placementFactor = isManualPlacement ? 0.5 : 0.4;
+
+        // Calculate final scale
+        const finalScale = `${baseX * placementFactor * scaleFactor} ${baseY * placementFactor * scaleFactor} ${baseZ * placementFactor * scaleFactor}`;
+
+        // Apply to model
+        modelEl.setAttribute('scale', finalScale);
+      }
+    }
+
+    // Populate model selector dropdown
+    function populateModelSelector() {
+      const selector = document.getElementById('model-selector');
+      if (!selector || !modelLoader) return;
+
+      // Clear existing options
+      selector.innerHTML = '';
+
+      // Get available formats from modelLoader
+      const formats = modelLoader.getAvailableFormats();
+
+      // Add options for each format
+      formats.forEach(format => {
+        const option = document.createElement('option');
+        option.value = format.key;
+        option.textContent = format.path.split('/').pop(); // Get filename from path
+        selector.appendChild(option);
+      });
+
+      // Set initial value
+      if (modelLoader.currentModelKey) {
+        selector.value = modelLoader.currentModelKey;
+      }
+
+      // Add change event listener
+      selector.addEventListener('change', (e) => {
+        const selectedKey = e.target.value;
+        modelLoader.switchFormat(selectedKey);
+
+        if (!isManualPlacement) {
+          // Use current location if available
+          if (currentPosition.latitude !== 0) {
+            placeModelByGPS(currentPosition.latitude, currentPosition.longitude, currentPosition.altitude, true);
+          } else {
+            placeModelByGPS(modelPosition.latitude, modelPosition.longitude, modelPosition.altitude, false);
+          }
+        }
+      });
+    }
+
+    // Calculate distance between two GPS coordinates in meters
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // Earth radius in meters
+      const φ1 = lat1 * Math.PI / 180;
+      const φ2 = lat2 * Math.PI / 180;
+      const Δφ = (lat2 - lat1) * Math.PI / 180;
+      const Δλ = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) *
+        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    // Update model information display
+    function updateModelInfo() {
+      if (!modelCoordsEl || !distanceDisplay) {
+        return;
+      }
+
+      if (isModelPlaced) {
+
+        // Update model coordinates display with more detailed information
+        const modelInfoText =
+          `Lat: ${modelPosition.latitude.toFixed(6)}\n` +
+          `Lon: ${modelPosition.longitude.toFixed(6)}\n` +
+          `Mode: ${isManualPlacement ? 'Manual' : 'GPS'}\n` +
+          `Format: ${modelLoader.currentFormat}\n` +
+          `Placement: ${isUserPlacedCoordinates ? 'User Coordinates' : 'GPS Location'}`;
+
+        // Update the display
+        modelCoordsEl.innerText = modelInfoText;
+
+        // Calculate and update distance
+        if (currentPosition.latitude && currentPosition.longitude) {
+          const distance = calculateDistance(
+            currentPosition.latitude, currentPosition.longitude,
+            modelPosition.latitude, modelPosition.longitude
+          );
+
+          // Format distance appropriately
+          const distanceText = distance > 1000 ?
+            `${(distance / 1000).toFixed(2)} km` :
+            `${distance.toFixed(1)} meters`;
+
+          distanceDisplay.innerText = distanceText;
+        } else {
+          distanceDisplay.innerText = 'N/A';
+        }
+      } else {
+        modelCoordsEl.innerText = "Modèle non placé";
+        distanceDisplay.innerText = "N/A";
+      }
+    }
+
+    // Update compass orientation
+    function updateCompassOrientation(heading) {
+      if (typeof heading === 'number') {
+        cameraHeading = heading;
+        compassImg.style.transform = `rotate(${-heading}deg)`;
+      }
+    }
+
+    // Function to update layer manager UI
+    function updateLayerManager() {
+      const layerList = document.getElementById('layer-list');
+      if (!layerList) return;
+
+      // Clear existing layers
+      layerList.innerHTML = '';
+
+      // Add layers for each node
+      modelNodes.forEach((isVisible, nodeName) => {
+        const layerItem = document.createElement('div');
+        layerItem.className = 'layer-item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isVisible;
+        checkbox.id = `layer-${nodeName}`;
+
+        const label = document.createElement('label');
+        label.htmlFor = `layer-${nodeName}`;
+        label.textContent = nodeName;
+
+        layerItem.appendChild(checkbox);
+        layerItem.appendChild(label);
+        layerList.appendChild(layerItem);
+
+        // Add change event listener
+        checkbox.addEventListener('change', (e) => {
+          toggleNodeVisibility(nodeName, e.target.checked);
+        });
+      });
+    }
+
+    // Function to toggle node visibility
+    function toggleNodeVisibility(nodeName, visible) {
+      if (!modelEl || !modelEl.object3D) return;
+
+      // Update the node's visibility state
+      modelNodes.set(nodeName, visible);
+
+      // Find the node in the model
+      const node = modelEl.object3D.getObjectByName(nodeName);
+      if (node) {
+        node.visible = visible;
+      }
+
+      // Update the layer manager UI
+      updateLayerManager();
+    }
+
+    // Function to initialize model nodes
+    function initializeModelNodes() {
+      if (!modelEl || !modelEl.object3D) return;
+
+      // Clear existing nodes
+      modelNodes.clear();
+
+      // Traverse the model and add all nodes
+      modelEl.object3D.traverse((node) => {
+        if (node.name && node.type !== 'Scene') {
+          modelNodes.set(node.name, true);
+        }
+      });
+
+      // Update the layer manager UI
+      updateLayerManager();
+    }
+
+    // Initialize when document is ready
+    window.addEventListener('DOMContentLoaded', () => {
+      // Initialize DOM elements first
+      initializeDOMElements();
+
+      // Then initialize the application
+      init();
+    });
+
+    // Add dropdown functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const controlPanelBtn = document.getElementById('control-panel-btn');
+      const infoPanelBtn = document.getElementById('info-panel-btn');
+      const controlPanel = document.getElementById('control-panel');
+      const infoPanelContainer = document.getElementById('info-panel-container');
+
+      // Function to toggle panel visibility
+      function togglePanel(button, panel) {
+        const isCollapsed = panel.classList.contains('collapsed');
+        if (isCollapsed) {
+          // Showing the panel
+          button.classList.remove('collapsed');
+          panel.classList.remove('collapsed');
+        } else {
+          // Hiding the panel
+          button.classList.add('collapsed');
+          panel.classList.add('collapsed');
+        }
+      }
+
+      // Add click event listeners
+      if (controlPanelBtn && controlPanel) {
+        controlPanelBtn.addEventListener('click', () => {
+          togglePanel(controlPanelBtn, controlPanel);
+        });
+      }
+
+      if (infoPanelBtn && infoPanelContainer) {
+        infoPanelBtn.addEventListener('click', () => {
+          togglePanel(infoPanelBtn, infoPanelContainer);
+        });
+      }
+
+      // Initialize panels as visible
+      if (controlPanel) controlPanel.classList.remove('collapsed');
+      if (infoPanelContainer) infoPanelContainer.classList.remove('collapsed');
+    });
+  </script>
+
+  <!-- Navigation/compass functionality -->
+  <script>
+    // Use device orientation for compass
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', function (event) {
+        if (event.webkitCompassHeading) {
+          // iOS compass heading (in degrees)
+          updateCompassOrientation(event.webkitCompassHeading);
+        } else if (event.alpha) {
+          // Android/others (alpha is in degrees)
+          // Convert to compass heading (alpha is counter-clockwise, compass is clockwise)
+          const heading = 360 - event.alpha;
+          updateCompassOrientation(heading);
+        }
+      }, false);
+    }
+
+    // Get more accurate GPS data with high accuracy
+    if ('geolocation' in navigator) {
+      navigator.geolocation.watchPosition(
+        pos => {
+          // Hide loader immediately when we get GPS data (permission granted)
+          hideLoader();
+          const { latitude, longitude, altitude, accuracy, heading } = pos.coords;
+
+          // Update current position
+          currentPosition.latitude = latitude;
+          currentPosition.longitude = longitude;
+          currentPosition.altitude = altitude || 0;
+
+          // Update compass if heading available
+          if (heading !== null) {
+            updateCompassOrientation(heading);
+          }
+
+          // Update GPS coordinates display with accuracy
+          coordsEl.innerText =
+            `Lat: ${latitude.toFixed(6)}\n` +
+            `Lon: ${longitude.toFixed(6)}\n` +
+            `Alt: ${altitude != null ? altitude.toFixed(1) + ' m' : '0 m'}\n` +
+            `Précision: ±${accuracy.toFixed(1)} m`;
+
+          // Handle initial accurate GPS update for auto placement (place only once)
+          if (!hasInitialGPSUpdate && !isManualPlacement && accuracy <= MIN_GPS_ACCURACY) {
+            hasInitialGPSUpdate = true; // Mark that initial GPS placement has occurred
+            console.log(`First accurate GPS fix (${accuracy.toFixed(1)}m) received. Placing model at this location.`);
+
+            // Store the initial GPS coordinates for display/distance calculation
+            // These coordinates will be the fixed point for model placement in auto mode
+            modelPosition.latitude = latitude;
+            modelPosition.longitude = longitude;
+            modelPosition.altitude = altitude || 0;
+
+            // Set GPS placement using these initial coordinates
+            modelEl.removeAttribute('position');
+            modelEl.removeAttribute('follow-camera');
+            modelEl.setAttribute('gps-entity-place', `latitude: ${latitude}; longitude: ${longitude}`);
+
+            // Also set initial rotation to face camera
+            const camera = document.querySelector('a-camera');
+            const cameraRotation = camera.getAttribute('rotation');
+            modelEl.setAttribute('rotation', `0 ${cameraRotation.y} 0`);
+
+            // Apply vertical offset
+            modelEl.setAttribute('position', `0 ${MODEL_OFFSET.height} 0`);
+
+            adjustModelScale();
+            // Model is now placed and visible
+            modelEl.setAttribute('visible', true);
+            modelLoader.toggleVisibility(true);
+            isModelVisible = true;
+            isModelPlaced = true;
+
+            if (toggleModelCheckbox) {
+              toggleModelCheckbox.checked = true;
+            }
+
+            // Update model info display immediately after placement
+            updateModelInfo();
+
+          }
+
+          // Always update model info if the model is placed (to show current distance etc.)
+          // updateModelInfo uses currentPosition and the fixed modelPosition
+          if (isModelPlaced) {
+            updateModelInfo();
+          }
+        },
+        err => {
+          // Hide loader even if there's an error
+          hideLoader();
+          coordsEl.innerText = 'GPS unavailable';
+          console.warn('Geolocation Error:', err);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 1000,
+          timeout: 5000
+        }
+      );
+    } else {
+      // Hide loader if geolocation is not supported
+      hideLoader();
+      coordsEl.innerText = 'Geo not supported';
+    }
+  </script>
+
+  <!-- Direction pointer component -->
+  <script>
+    AFRAME.registerComponent('direction-pointer', {
+      schema: {
+        target: { type: 'selector', default: '#model' },
+        smoothing: { type: 'number', default: 0.1 }, // Smoothing factor for rotation
+        hideDistance: { type: 'number', default: 10 } // Distance at which to hide arrow
+      },
+
+      init: function () {
+        console.log('Direction pointer initialized');
+        this.arrow = document.getElementById('direction-arrow');
+        if (!this.arrow) {
+          console.error('Arrow element not found!');
+          return;
+        }
+        this.arrow.style.display = 'block';
+
+        // Initialize vectors
+        this.tempVec = new THREE.Vector3();
+        this.currentAngle = 0;
+        this.targetAngle = 0;
+
+        // Add a small offset to make the arrow more visible
+        this.arrow.style.transform = 'translate(10px, 10px)';
+      },
+
+      tick: function () {
+        if (!this.data.target || !this.data.target.object3D) {
+          return;
+        }
+
+        // Get camera and model positions
+        const camera = this.el.object3D;
+        const model = this.data.target.object3D;
+
+        // Get world positions
+        const cameraPos = new THREE.Vector3();
+        const modelPos = new THREE.Vector3();
+        camera.getWorldPosition(cameraPos);
+        model.getWorldPosition(modelPos);
+
+        // Calculate direction to model
+        const direction = new THREE.Vector3().subVectors(modelPos, cameraPos);
+        const distance = direction.length();
+
+        // Get camera's forward direction
+        const cameraForward = new THREE.Vector3(0, 0, -1);
+        cameraForward.applyQuaternion(camera.quaternion);
+
+        // Calculate angle between camera forward and direction to model
+        const angleToModel = Math.acos(
+          cameraForward.dot(direction.normalize())
+        ) * (180 / Math.PI);
+
+        // Hide arrow if model is in front of camera and close enough
+        if (angleToModel < 45 && distance < this.data.hideDistance) {
+          this.arrow.style.display = 'none';
+          return;
+        } else {
+          this.arrow.style.display = 'block';
+        }
+
+        // Project both vectors onto the XZ plane
+        direction.y = 0;
+        cameraForward.y = 0;
+        direction.normalize();
+        cameraForward.normalize();
+
+        // Calculate the angle between vectors using atan2
+        const rawAngle = Math.atan2(
+          direction.x * cameraForward.z - direction.z * cameraForward.x,
+          direction.x * cameraForward.x + direction.z * cameraForward.z
+        );
+
+        // Convert to degrees
+        this.targetAngle = rawAngle * (180 / Math.PI);
+
+        // Smooth the rotation
+        const angleDiff = this.targetAngle - this.currentAngle;
+
+        // Normalize angle difference to [-180, 180]
+        if (angleDiff > 180) {
+          this.currentAngle += angleDiff - 360;
+        } else if (angleDiff < -180) {
+          this.currentAngle += angleDiff + 360;
+        }
+
+        // Apply smoothing
+        this.currentAngle += angleDiff * this.data.smoothing;
+
+        // Adjust arrow size based on distance
+        const baseSize = 50; // Base size in pixels
+        const minSize = 30;  // Minimum size
+        const maxSize = 70;  // Maximum size
+        const size = Math.min(maxSize, Math.max(minSize, baseSize * (1 + distance * 0.1)));
+
+        // Apply rotation and size
+        this.arrow.style.transform = `
+          translate(10px, 10px)
+          rotate(${this.currentAngle}deg)
+          scale(${size / 50})
+        `;
+
+        // Add visual feedback for distance
+        const opacity = Math.min(1, Math.max(0.3, 1 - (distance * 0.1)));
+        this.arrow.style.opacity = opacity;
+      }
+    });
+
+    // Register the component
+    AFRAME.registerComponent('model-direction', {
+      init: function () {
+        console.log('Model direction component initialized');
+        this.el.addEventListener('model-loaded', () => {
+          console.log('Model loaded event fired');
+          const camera = document.querySelector('a-camera');
+          if (camera) {
+            camera.setAttribute('direction-pointer', {
+              target: '#model',
+              smoothing: 0.1
+            });
+          }
+        });
+      }
+    });
+
+    // Add the model-direction component to the model entity
+    document.addEventListener('DOMContentLoaded', () => {
+      const model = document.getElementById('model');
+      if (model) {
+        model.setAttribute('model-direction', '');
+      }
+    });
+  </script>
+</body>
+
+</html>

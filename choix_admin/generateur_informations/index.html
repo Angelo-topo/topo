@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Générateur Dossier Chantier - Razel-Bec</title>
+  <link rel="icon" href="/images/logo-fayat-diamond.png">
+  <link rel="stylesheet" href="/css/style.css">
+
+<style>
+  #conducteurTravaux {
+    display: block;
+    margin-top: 6px;
+  }
+</style>
+
+  <!-- 📦 Ajoute la librairie JSZip pour créer un ZIP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+</head>
+
+<div id="loader"
+  style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); z-index: 9999; text-align: center; font-size: 24px; color: #333; line-height: 100vh;">
+  Génération du fichier en cours...
+</div>
+
+<body>
+
+  <header class="site-header">
+    <div style="flex: 1;align-content: center;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+
+    </div>
+    <div style="flex: 20;align-content: center;">
+      <h1>Générateur Dossier Chantier</h1>
+      <p>Remplissez les champs.</p>
+    </div>
+    <div style="flex: 1;opacity: 0;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+  </header>
+
+  <form id="generatorForm" style="display: flex;flex-direction: column;align-items: center;flex: 20;">
+    <label>Maitre d’ouvrage:
+      <input type="text" id="maitreOuvrage" list="moaList" required>
+      <datalist id="moaList"></datalist>
+    </label>
+
+    <label>Maitre d’œuvre:
+      <input type="text" id="maitreOeuvre" list="moeList" required>
+      <datalist id="moeList"></datalist>
+    </label>
+
+    <label>Objet du marché:
+      <input type="text" id="objetMarche" required>
+    </label>
+
+    <label>Site:
+      <input type="text" id="site" required>
+    </label>
+
+    <label>Directeur/Ingénieur/Conducteur de travaux:<br>
+      <input type="text" id="conducteurTravaux" list="conducteursList" required>
+      <datalist id="conducteursList"></datalist>
+    </label>
+
+    <label>Chef de chantier:
+      <input type="text" id="chefChantier" list="chefsList" required>
+      <datalist id="chefsList"></datalist>
+    </label>
+
+    <label>N° affaire:
+      <input type="text" id="numAffaire" required>
+    </label>
+
+    <label>Année:
+      <input type="text" id="annee" required>
+    </label>
+
+
+    <div id="dropZonePdf" tabindex="0" class="drop-zone"
+      style="border: 2px dashed #ccc; padding: 20px; text-align: center; margin-top: 20px; cursor: pointer;">
+      <span class="dropZoneText">PDF - Dépose ton fichier PDF ici ou clique pour choisir.</span>
+      <input type="file" id="pdfFile" accept="application/pdf" style="display: none;" multiple>
+    </div>
+
+    <label>Lien usBIM (Viewer 3D):
+      <input type="text" id="lien_viewer" placeholder="Collez le lien usBIM ici.">
+    </label>
+
+    <div id="dropZoneMarker" tabindex="0" class="drop-zone"
+      style="border: 2px dashed #ccc; padding: 20px; text-align: center; margin-top: 20px; cursor: pointer;">
+      <span class="dropZoneText">Dépose ton modèle 3D ici ou clique pour choisir.</span>
+      <input type="file" id="OBJ_model" accept=".obj,.mtl,.jpg" style="display: none;" multiple>
+    </div>
+
+    <label>Nom courant du chantier:
+      <input type="text" id="nomcourantChantier" placeholder="Exemple: N° chantier - Nom (SOVM, JAE, ...)" required>
+    </label>
+
+    <button type="submit"
+      style="padding: 15px; text-align: center;display: block; margin: auto; cursor: pointer;margin-top: 30px;">
+      Générer et télécharger
+    </button>
+
+  </form>
+
+  <script>
+    async function remplirListeDatalist(idDatalist, fichier) {
+      try {
+        const response = await fetch(`liste/${fichier}`);
+        const texte = await response.text();
+        // Découper le texte par ligne, même si \r\n (Windows) ou \n (Linux)
+        const options = texte.split(/\r?\n/).filter(line => line.trim() !== "");
+
+        const datalist = document.getElementById(idDatalist);
+        datalist.innerHTML = ""; // Reset
+
+        options.forEach(opt => {
+          const option = document.createElement("option");
+          option.value = opt;
+          datalist.appendChild(option);
+        });
+      } catch (err) {
+        console.error("Erreur lors du chargement de", fichier, err);
+      }
+    }
+
+    // Remplir les datalists au chargement
+    remplirListeDatalist("moaList", "moa.txt");
+    remplirListeDatalist("moeList", "moe.txt");
+    remplirListeDatalist("conducteursList", "conducteurs.txt");
+    remplirListeDatalist("chefsList", "chefs.txt");
+
+    // Générer le fichier infos.js
+    document.getElementById('generatorForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      // ➜ Affiche le loader
+      document.getElementById('loader').style.display = 'block';
+      try {
+        // Pour le conducteur
+        const conducteurInput = document.getElementById('conducteurTravaux').value;
+        const [conducteurFonction, conducteurNom, conducteurTel] = conducteurInput.split(" ; ");
+
+        // Pour le chef de chantier
+        const chefInput = document.getElementById('chefChantier').value;
+        const [chefFonction, chefNom, chefTel] = chefInput.split(" ; ");
+
+        const data = {
+          maitreOuvrage: document.getElementById('maitreOuvrage').value,
+          maitreOeuvre: document.getElementById('maitreOeuvre').value,
+          objetMarche: document.getElementById('objetMarche').value,
+          site: document.getElementById('site').value,
+          conducteurTravaux: {
+            fonction: conducteurFonction.trim(),
+            nom: conducteurNom.trim(),
+            tel: conducteurTel.trim()
+          },
+          chefChantier: {
+            fonction: chefFonction.trim(),
+            nom: chefNom.trim(),
+            tel: chefTel.trim()
+          },
+          numAffaire: document.getElementById('numAffaire').value,
+          annee: document.getElementById('annee').value
+        };
+
+        const scriptContent =
+          `const infosMarche = ${JSON.stringify(data, null, 2)};`;
+
+        const zip = new JSZip();
+
+        // ➜ Ajoute le fichier JS dans le dossier "Infos"
+        zip.folder("Infos").file("infos.js", scriptContent);
+
+        // ➜ Ajoute le fichier TXT dans le dossier "Viewer"
+        const lienViewer = document.getElementById('lien_viewer').value.trim();
+        if (lienViewer !== "") {
+          zip.folder("Viewer").file("lien_viewer.txt", lienViewer);
+        }
+
+        // ➜ Ajoute les fichiers PDF dans le dossier "PDF"
+        const pdfFiles = document.getElementById('pdfFile').files;
+        if (pdfFiles.length) {
+          const folderPdf = zip.folder("PDF");
+          for (const file of pdfFiles) {
+            const pdfData = await file.arrayBuffer();
+            folderPdf.file(file.name, pdfData);
+          }
+        }
+
+
+        // ➜ Ajoute les fichiers OBJ_model dans "OBJ_model"
+        const OBJ_modelFiles = document.getElementById('OBJ_model').files;
+        if (OBJ_modelFiles.length) {
+          const folderMarker = zip.folder("OBJ_model");
+
+          // → 1. Détection d’un .mtl fourni par l’utilisateur
+          let hasUserMtl = false;
+
+          // → 2. Ajout des fichiers sélectionnés, en les renommant
+          for (const file of OBJ_modelFiles) {
+            const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            if (extension === '.mtl') hasUserMtl = true;   // On a trouvé un .mtl utilisateur
+
+            const newFileName = `representation_3d${extension}`;
+            const fileData = await file.arrayBuffer();
+            folderMarker.file(newFileName, fileData);
+          }
+
+          // → 3. Génération automatique du .mtl UNIQUEMENT si l’utilisateur n’en a pas fourni
+          if (!hasUserMtl) {
+            const mtlContent = `newmtl texture
+illum 0
+map_Kd representation_3d.jpg
+            `;
+            folderMarker.file("representation_3d.mtl", mtlContent);
+          }
+        }
+
+
+        // Génère le ZIP et télécharge
+
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const nomcourantChantier = document.getElementById('nomcourantChantier').value.trim() || 'dossier_marche';
+        a.download = `${nomcourantChantier}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        // Confirmation téléchargement ZIP
+        console.log("ZIP téléchargé !");
+
+      } finally {
+        // ➜ Masque le loader même s'il y a une erreur
+        document.getElementById('loader').style.display = 'none';
+      }
+    }
+    );
+
+  </script>
+
+</body>
+
+<script>
+  function setupDropZone(dropZoneId, inputId, acceptedTypes) {
+    const dropZone = document.getElementById(dropZoneId);
+    const input = document.getElementById(inputId);
+
+    // Clique = ouvrir sélecteur
+    dropZone.addEventListener('click', () => input.click());
+
+    // Drag over
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.style.backgroundColor = '#e0e0e0';
+    });
+
+    // Drag leave
+    dropZone.addEventListener('dragleave', e => {
+      e.preventDefault();
+      dropZone.style.backgroundColor = '';
+    });
+
+    // Drop
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.style.backgroundColor = '';
+      const files = e.dataTransfer.files;
+
+      // Vérifie le type (PDF = un seul fichier, 3D = plusieurs fichiers)
+      if (files.length) {
+        const validFiles = Array.from(files).filter(file => {
+          return acceptedTypes.some(type => file.name.toLowerCase().endsWith(type));
+        });
+
+        if (validFiles.length) {
+          // Ajoute les fichiers au input invisible
+          const dataTransfer = new DataTransfer();
+          validFiles.forEach(file => dataTransfer.items.add(file));
+          input.files = dataTransfer.files;
+
+
+          const plural = validFiles.length > 1 ? 's' : '';
+          const selected = validFiles.length > 1 ? 'sélectionnés' : 'sélectionné';
+          const fichiers = validFiles.length > 1 ? 'fichiers' : 'fichier';
+          const dropZoneText = dropZone.querySelector('.dropZoneText');
+          dropZoneText.textContent = `${validFiles.length} ${fichiers} ${selected} : ${validFiles.map(f => f.name).join(', ')} ✅`;
+        }
+        else {
+          alert(`Merci de déposer un fichier du type : ${acceptedTypes.join(', ')}`);
+        }
+      }
+    });
+
+    // Quand l'utilisateur sélectionne un fichier via le sélecteur
+    input.addEventListener('change', () => {
+      const files = input.files;
+      const validFiles = Array.from(files).filter(file => {
+        return acceptedTypes.some(type => file.name.toLowerCase().endsWith(type));
+      });
+
+      if (validFiles.length) {
+        const plural = validFiles.length > 1 ? 's' : '';
+        const selected = validFiles.length > 1 ? 'sélectionnés' : 'sélectionné';
+        const fichiers = validFiles.length > 1 ? 'fichiers' : 'fichier';
+        const dropZoneText = dropZone.querySelector('.dropZoneText');
+        dropZoneText.textContent = `${validFiles.length} ${fichiers} ${selected} : ${validFiles.map(f => f.name).join(', ')} ✅`;
+      } else {
+        alert(`Merci de déposer un fichier du type : ${acceptedTypes.join(', ')}`);
+      }
+    });
+  }
+
+  // Initialiser chaque drop zone
+  setupDropZone('dropZonePdf', 'pdfFile', ['.pdf']);
+  setupDropZone('dropZoneMarker', 'OBJ_model', ['.obj', '.mtl', '.jpg']);
+
+
+
+</script>
+
+</html>

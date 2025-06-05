@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Viewer Réalité Augmentée - Razel-Bec</title>
+  <link rel="icon" href="/images/logo-fayat-diamond.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Style existant pour l'UI */
+
+    #ui {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: calibri;
+      z-index: 1001;
+      width: 170px;
+      overflow-y: auto;
+    }
+
+    #ui label,
+    #ui select,
+    #ui input {
+      display: block;
+      margin: 6px 0;
+      width: 100%;
+    }
+
+    .arjs-loader {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: calibri;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 8px;
+      border-radius: 3px;
+      z-index: 1000;
+    }
+
+    /* Message lorsque le marqueur n'est pas détecté */
+    #marker-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-family: calibri;
+      font-size: 16px;
+      z-index: 1002;
+      display: block;
+    }
+
+
+    /* Snipper */
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-top-color: #333;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 8px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
+</head>
+
+<body>
+
+  <header class="site-header" style="position:absolute; top:0px; left: 0px">
+    <div style="flex: 1;align-content: center;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+
+    </div>
+    <div style="flex: 20;align-content: center;">
+      <h1>Viewer Réalité Augmentée</h1>
+      <p>Visualisez votre modèle en réalité augmentée. Vous pouvez orienter et changer l'échelle de l'objet.</p>
+    </div>
+    <div style="flex: 1;opacity: 0;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+  </header>
+
+  <div id="ui">
+    <label for="rotX">Rotation X (°) :</label>
+    <input type="range" id="rotX" min="0" max="360" value="0">
+    <label for="rotY">Rotation Y (°) :</label>
+    <input type="range" id="rotY" min="0" max="360" value="0">
+    <label for="rotZ">Rotation Z (°) :</label>
+    <input type="range" id="rotZ" min="0" max="360" value="0">
+    <label for="scaleManual">Échelle manuelle :</label>
+    <input type="range" id="scaleManual" min="0.1" max="5" step="0.1" value="1">
+    <label for="scalePreset">Échelle d'intégration :</label>
+    <select id="scalePreset">
+      <option value="1">1:10</option>
+      <option value="0.5">1:50</option>
+      <option value="0.1">1:100</option>
+      <option value="0.05" selected>1:200</option>
+      <option value="0.04">1:250</option>
+      <option value="0.02">1:500</option>
+      <option value="0.01">1:1000</option>
+      <option value="0.005">1:2000</option>
+      <option value="0.002">1:5000</option>
+    </select>
+    <label for="markerSelector">Choisir un marqueur :</label>
+    <select id="markerSelector">
+      <option value="./pattern/pattern-RZB.patt">Marqueur RZB</option>
+      <option value="./pattern/pattern-letterA.patt">Marqueur Lettre A</option>
+      <option value="./pattern/pattern-letterB.patt">Marqueur Lettre B</option>
+    </select>
+  </div>
+
+  <!-- Loader pendant le chargement du modèle -->
+  <div id="marker-message">
+    <div id="sniper" class="spinner"></div>
+    <div>Ciblez le marqueur...</div>
+  </div>
+
+  <a-scene embedded arjs="trackingMethod: best; sourceType: webcam; smooth: true;">
+    <!-- Marqueur RZB -->
+    <a-marker id="marker-RZB" type="pattern" url="./pattern/pattern-RZB.patt" size="0.04" visible="true">
+      <a-entity id="model-RZB"
+        obj-model="obj: url(/chantiers/${chantier}/OBJ_model/representation_3d.obj`); mtl: url(/chantiers/${chantier}/OBJ_model/representation_3d.mtl)"
+        visible="false">
+      </a-entity>
+    </a-marker>
+
+    <!-- Marqueur Lettre A -->
+    <a-marker id="marker-letterA" type="pattern" url="./pattern/pattern-letterA.patt" size="0.04" visible="false">
+      <a-entity id="model-letterA"
+        obj-model="obj: url(/chantiers/${chantier}/OBJ_model/representation_3d.obj`); mtl: url(/chantiers/${chantier}/OBJ_model/representation_3d.mtl)"
+        visible="false">
+      </a-entity>
+    </a-marker>
+
+    <!-- Marqueur Lettre B -->
+    <a-marker id="marker-letterB" type="pattern" url="./pattern/pattern-letterB.patt" size="0.04" visible="false">
+      <a-entity id="model-letterB"
+        obj-model="obj: url(/chantiers/${chantier}/OBJ_model/representation_3d.obj`); mtl: url(/chantiers/${chantier}/OBJ_model/representation_3d.mtl)"
+        visible="false">
+      </a-entity>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+
+  <script>
+
+    function getChantier() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('chantier') || '';
+    }
+
+    const chantier = getChantier();
+    const markerIds = ['marker-RZB', 'marker-letterA', 'marker-letterB'];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const chantier = getChantier();
+      const objUrl = `/chantiers/${chantier}/OBJ_model/representation_3d.obj`;
+      const mtlUrl = `/chantiers/${chantier}/OBJ_model/representation_3d.mtl`;
+      const msg = document.getElementById('marker-message');
+      ['model-RZB', 'model-letterA', 'model-letterB'].forEach(id => {
+        const model = document.getElementById(id);
+        model.setAttribute('obj-model', `obj: url(${objUrl}); mtl: url(${mtlUrl})`);
+      });
+      const rotX = document.getElementById('rotX');
+      const rotY = document.getElementById('rotY');
+      const rotZ = document.getElementById('rotZ');
+      const scaleManual = document.getElementById('scaleManual');
+      const scalePreset = document.getElementById('scalePreset');
+      const MODEL_UNIT_SCALE = 1;        // 1 unité du fichier = 1 m (change si besoin)
+      const markerSelector = document.getElementById('markerSelector');
+      const initialRot = { x: -90, y: 0, z: 0 };
+      let activeModel = null;
+      let activeMarkerId = 'marker-RZB'; // Valeur initiale
+
+      // Fonction pour MAJ transformations
+      function updateTransform() {
+        if (!activeModel) return;
+        const x = initialRot.x + parseFloat(rotX.value);
+        const y = initialRot.y + parseFloat(rotY.value);
+        const z = parseFloat(rotZ.value);
+        activeModel.setAttribute('rotation', `${x} ${y} ${z}`);
+        const finalScale =
+          parseFloat(scaleManual.value) * parseFloat(scalePreset.value);
+        activeModel.setAttribute('scale', `${finalScale} ${finalScale} ${finalScale}`);
+}
+
+
+      // Associer les événements de détection aux marqueurs
+      markerIds.forEach(id => {
+        const marker = document.getElementById(id);
+        const modelId = id.replace('marker', 'model');
+        const model = document.getElementById(modelId);
+
+        marker.addEventListener('markerFound', () => {
+          if (id !== activeMarkerId) return; // Ignorer si ce n’est pas le marqueur actif
+          msg.style.display = 'none';
+          activeModel = model;
+          model.setAttribute('visible', 'true');
+          updateTransform();
+        });
+
+        marker.addEventListener('markerLost', () => {
+          if (id !== activeMarkerId) return; // Ignorer si ce n’est pas le marqueur actif
+          msg.style.display = 'block';
+          model.setAttribute('visible', 'false');
+          activeModel = null;
+        });
+      });
+
+      // Quand l’utilisateur change le marqueur actif dans l’UI
+      markerSelector.addEventListener('change', (e) => {
+        const selectedMarkerUrl = e.target.value;
+        if (selectedMarkerUrl.includes('RZB')) {
+          activeMarkerId = 'marker-RZB';
+        } else if (selectedMarkerUrl.includes('letterA')) {
+          activeMarkerId = 'marker-letterA';
+        } else if (selectedMarkerUrl.includes('letterB')) {
+          activeMarkerId = 'marker-letterB';
+        }
+
+        // Masquer tous les modèles
+        markerIds.forEach(id => {
+          const modelId = id.replace('marker', 'model');
+          document.getElementById(modelId).setAttribute('visible', 'false');
+        });
+
+        activeModel = null;
+        msg.style.display = 'block';
+      });
+
+      // MAJ sliders
+      [rotX, rotY, rotZ, scaleManual, scalePreset].forEach(el => {
+        el.addEventListener('input', updateTransform);
+      });
+    });
+  </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Accueil - Razel-Bec</title>
+  <link rel="icon" href="/images/logo-fayat-diamond.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js">
+  </script>
+
+  <style>
+    option,
+    select {
+      font-family: calibri;
+      font-size: large;
+    }
+  </style>
+
+
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div style="flex: 1;align-content: center;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+    <div style="flex: 20;align-content: center;">
+      <h1>Accueil</h1>
+      <p>Sélection de l'affaire</p>
+    </div>
+    <div style="flex: 1;opacity: 0;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+  </header>
+
+  <div class="container" style="flex-direction: column;">
+    <div style="display: flex;flex-direction: column;align-items: center;">
+      <h3>Choisissez une affaire :</h3>
+      <!-- Barre de recherche -->
+    <input type="text" id="searchBar" placeholder="Rechercher..." style="margin-bottom: 20px; padding: 5px; width: 400px">
+      <select id="maListe"></select>
+      <button id="toto" type="submit"
+        style="padding: 15px; text-align: center;display: block; margin: auto; cursor: pointer;margin-top: 30px;">
+        Valider
+      </button>
+    </div>
+  </div>
+
+</body>
+
+</html>
+
+<script>
+  const maListe = document.getElementById("maListe");
+  let optionsData = []; // On va stocker les données ici
+
+
+    fetch('/list-chantier')
+      .then(response => response.json())
+      .then(fichiers => {
+        optionsData = data;
+        remplirListe(optionsData);
+      })
+      .catch(console.error);
+
+
+  function remplirListe(data) {
+    maListe.innerHTML = ""; // On vide la liste
+    data.forEach(element => {
+      const option = document.createElement("option");
+      option.value = element;
+      option.textContent = element;
+      maListe.appendChild(option);
+    });
+  }
+
+  // Filtrer la liste pendant la saisie
+  document.getElementById("searchBar").addEventListener("input", function() {
+    const filtre = this.value.toLowerCase();
+    const resultatFiltre = optionsData.filter(item => item.toLowerCase().includes(filtre));
+    remplirListe(resultatFiltre);
+  });
+
+  // Générer le fichier infos.js
+  document.getElementById('toto').addEventListener('click', function () {
+    const baseUrl = window.location.pathname;
+    const newPath = 'menu/';
+    const newParams = '?chantier=' + document.getElementById('maListe').value;
+
+    const newUrl = `${baseUrl}${newPath}${newParams}`;
+    window.location.href = newUrl;
+  });
+</script>

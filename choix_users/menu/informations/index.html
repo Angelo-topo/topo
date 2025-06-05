@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  
+  <meta charset="UTF-8">
+  <title>Informations chantier - Razel-bec</title>
+  <link rel="icon" href="/images/logo-fayat-diamond.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<style>
+
+  /* Espacement entre les paragraphes */
+  #infosMarche p {
+    margin-bottom: 10px;
+    /* Ajuste ici pour plus ou moins d’espace */
+  }
+
+  .copy-btn {
+    margin-left: 10px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+
+  .copy-btn img {
+    width: 20px;
+    height: 20px;
+  }
+
+.container {
+  flex-direction: column; /*les <p> s'empilent verticalement */
+}
+
+.carte-container {
+  width: 700px;       /* Largeur fixe pour écrans standards */
+  max-width: 100%;    /* Pour que ça s’adapte si l’écran est plus petit */
+  border: 2px solid #ccc; /* Bordure grise */
+  border-radius: 8px; /* Coins arrondis */
+  overflow: hidden;   /* Cache les débordements */
+  margin: 20px auto 30px auto;  /* Centrage horizontal */
+}
+
+/* Pour les écrans intermédiaires, style tablette par exemple */
+@media (max-width: 1200px) {
+  .carte-container {
+    width: 60%;
+  }
+}
+
+/* Pour les écrans de moins de 600px (téléphone) */
+@media (max-width: 600px) {
+  .carte-container {
+    width: 80%; /* Largeur maximale pour petits écrans */
+    border-width: 2px; /* Bordure plus fine */
+    margin: 20px 0px 30px 0px;  /* Centrage horizontal */
+  }
+}
+
+
+
+
+</style>
+
+<body>
+
+  <header class="site-header">
+    <div style="flex: 1;align-content: center;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+    <div style="flex: 20;align-content: center;">
+      <h1 id="titreChantier"></h1>
+      <p>Informations du chantier</p>
+    </div>
+    <div style="flex: 1;opacity: 0;" id="logoEnterprise">
+      <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+    </div>
+  </header>
+  <div class="container"></div>
+
+<script>
+  function getChantier() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('chantier') || '';
+  }
+
+  const chantier = getChantier();
+  document.getElementById('titreChantier').textContent = chantier ? chantier : 'Chantier inconnu';
+
+  if (chantier) {
+    const script = document.createElement('script');
+    script.src = `/chantiers/${chantier}/Infos/infos.js`;
+
+    script.onload = () => {
+      if (typeof infosMarche !== 'undefined') {
+        const container = document.getElementsByClassName('container')[0];
+        container.innerHTML = `
+          <p><strong>Maitre d’ouvrage:</strong> ${infosMarche.maitreOuvrage}</p>
+          <p><strong>Maitre d’œuvre:</strong> ${infosMarche.maitreOeuvre}</p>
+          <p><strong>Objet du marché:</strong> ${infosMarche.objetMarche}</p>
+          <p><strong>Site:</strong> 
+            <span id="siteValue">${infosMarche.site}</span>
+            <span class="copy-btn" title="Copier le site">
+              <img src="/images/copy.svg" alt="Copier" />
+            </span>
+          </p>
+
+          <div class="carte-container">
+            <iframe
+              width="100%"
+              height="300"
+              frameborder="0"
+              style="border:0"
+              src="https://www.google.com/maps?q=${encodeURIComponent(infosMarche.site)}&output=embed&z=12"
+              allowfullscreen>
+            </iframe>
+          </div>
+  
+          <p><strong>${infosMarche.conducteurTravaux.fonction}:</strong> ${infosMarche.conducteurTravaux.nom}<br>
+            <strong>Téléphone:</strong> 
+            <span id="conducteurTel">${infosMarche.conducteurTravaux.tel}</span>
+            <span class="copy-btn" title="Copier le numéro de téléphone">
+              <img src="/images/copy.svg" alt="Copier" />
+            </span>
+          </p>
+          <p><strong>${infosMarche.chefChantier.fonction}:</strong> ${infosMarche.chefChantier.nom}<br>
+            <strong>Téléphone:</strong> 
+            <span id="chefTel">${infosMarche.chefChantier.tel}</span>
+            <span class="copy-btn" title="Copier le numéro de téléphone">
+              <img src="/images/copy.svg" alt="Copier" />
+            </span>
+          </p>
+          <p><strong>N° affaire:</strong> ${infosMarche.numAffaire}</p>
+          <p><strong>Année:</strong> ${infosMarche.annee}</p>
+        `;
+      } else {
+        console.warn("Le script infos.js n'a pas été trouvé.");
+      }
+    };
+
+    document.body.appendChild(script);
+  } else {
+    console.warn('Aucun chantier sélectionné.');
+  }
+
+  // Copier au clic
+  document.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest('.copy-btn');
+    if (copyBtn) {
+      const siteSpan = document.getElementById('siteValue');
+      const conducteurTelSpan = document.getElementById('conducteurTel');
+      const chefTelSpan = document.getElementById('chefTel');
+
+      if (copyBtn.previousElementSibling === siteSpan) {
+        navigator.clipboard.writeText(siteSpan.innerText).then(() => {
+          alert('Site copié dans le presse-papiers !');
+        }).catch(err => {
+          console.error('Erreur lors de la copie :', err);
+        });
+      } else if (copyBtn.previousElementSibling === conducteurTelSpan) {
+        navigator.clipboard.writeText(conducteurTelSpan.innerText).then(() => {
+          alert('Téléphone du conducteur copié !');
+        }).catch(err => {
+          console.error('Erreur lors de la copie :', err);
+        });
+      } else if (copyBtn.previousElementSibling === chefTelSpan) {
+        navigator.clipboard.writeText(chefTelSpan.innerText).then(() => {
+          alert('Téléphone du chef copié !');
+        }).catch(err => {
+          console.error('Erreur lors de la copie :', err);
+        });
+      }
+    }
+  });
+</script>
+
+
+</body>
+
+</html>

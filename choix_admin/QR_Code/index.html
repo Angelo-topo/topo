@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="content-language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur QR Code - Razel-Bec</title>
+    <link rel="icon" href="/images/logo-fayat-diamond.png">
+<style>
+  /* Switch coché : on met bleu foncé en fond et bouton jaune */
+  #switch_razel .switcher input:checked + .toggle {
+    background-color: #0055a0;  /* bleu foncé */
+  }
+  #switch_razel .switcher input:checked + .toggle::before {
+    background-color: #ffd800; /* jaune */
+  }
+</style>
+
+
+    <script>var delayScripts = [];
+        var waitLoadCount = 0;
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        if (location.hostname != 'localhost') {
+            gtag('js', new Date());
+            gtag('config', 'G-WT6N5R6W6Z');
+
+            (function () {
+                var gaUrl = 'https://www.googletagmanager.com/gtag/js?id=G-WT6N5R6W6Z';
+
+                function initGTMOnEvent(e) {
+                    document.removeEventListener(event.type, initGTMOnEvent);
+                    initGTM();
+                }
+
+                function initGTM() {
+                    if (window.gtmDidInit) {
+                        return;
+                    }
+                    window.gtmDidInit = true;
+                    var script = document.createElement('script');
+                    script.async = true;
+                    script.src = gaUrl;
+                    document.head.appendChild(script);
+                }
+
+                if (document.addEventListener) {
+                    document.addEventListener('DOMContentLoaded', function () {
+                        setTimeout(initGTM, 3500);
+                    });
+                    document.addEventListener('scroll', initGTMOnEvent);
+                    document.addEventListener('mousemove', initGTMOnEvent);
+                    document.addEventListener('touchstart', initGTMOnEvent);
+                } else {
+                    delayScripts.push({
+                        src: gaUrl
+                    });
+                }
+            })();
+        }
+
+        if (localStorage.getItem('DARK') === '1') {
+            document.documentElement.classList.add('dark-theme')
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/qrcode.css?v=6">
+    <link rel="stylesheet" href="https://artf.github.io/grapick/dist/grapick.min.css" media="print"><noscript>
+        <link rel="stylesheet" href="https://artf.github.io/grapick/dist/grapick.min.css">
+    </noscript>
+</head>
+
+<body>
+    <div id="app">
+        <div id="content">
+            <header class="site-header">
+                <div style="flex: 1;align-content: center;">
+                    <img id="logo-razel" src="/images/logo-razel-bec.jpg" alt="Logo Razel-Bec">
+                </div>
+                <div style="flex: 20;align-content: center;">
+                    <h1>Generateur QR Code</h1>
+                    <p>Cet outil vous permet de générer un QR-Code et de personnalisé le design. Vous pouvez télécharger
+                        l'image
+                        et partager un lien, facilement.</p>
+                </div>
+                <div style="flex: 1;">
+                </div>
+            </header>
+
+            <main>
+                <div class="layout">
+                    <div class="layout-block">
+                        <div class="input">
+                            <div class="block block-fill">
+                                <div class="block-title">Entrée<div class="toolbar"><button class="icon"
+                                            data-toggle="fullscreen"><img class="fullscreen-icon"
+                                                src="/images/fullscreen.svg" alt="Full Screen" title="Full Screen"><img
+                                                class="fullscreen-icon-exit" src="/images/fullscreen-exit.svg"
+                                                alt="Full Screen" title="Full Screen"></button></div>
+                                </div><textarea class="container" id="input" spellcheck="false"
+                                    placeholder="Entrez ici le lien ..." data-remember="input" data-share="input"
+                                    data-encoding-from="#input-type" data-auto-update
+                                    data-toggle="monacoEditor"></textarea>
+                            </div>
+                            </details>
+                        </div>
+                        <div class="output">
+                            <div class="block block-fill">
+                                <div class="block-title">Sortie<div class="toolbar"><a class="icon" id="download-image"
+                                            download="download" style="display:none"
+                                            onclick="gtag('event', 'download');"><img src="/images/download.svg"
+                                                alt="Download" title="Download" /></a><button class="icon"
+                                            data-toggle="fullscreen"><img class="fullscreen-icon"
+                                                src="/images/fullscreen.svg" alt="Full Screen" title="Full Screen"><img
+                                                class="fullscreen-icon-exit" src="/images/fullscreen-exit.svg"
+                                                alt="Full Screen" title="Full Screen"></button></div>
+                                </div>
+                                <div class="container" id="qrcode"></div>
+
+                            </div>
+                            <details class="block" data-toggle="copyblock">
+                                <summary class="block-title">Code intégré<div class="toolbar"><button class="icon"
+                                            data-toggle="copy" data-clipboard-target="#output"
+                                            data-message="Embedded code copied"><img src="/images/copy.svg" alt="Copy"
+                                                title="Copy" /></button></div>
+                                </summary><textarea id="output" placeholder="Embedded Code"
+                                    readonly="readonly"></textarea>
+                            </details>
+                            <details class="block text-only" data-toggle="copyblock">
+                                <summary class="block-title">Partager le lien<div class="toolbar"><button class="icon"
+                                            data-toggle="copy" data-clipboard-target="#share-link"
+                                            data-message="Share link copied"><img src="/images/copy.svg" alt="Copy"
+                                                title="Copy" /></button></div>
+                                </summary><input id="share-link" type="text" placeholder="Share Link"
+                                    readonly="readonly" />
+                            </details>
+                        </div>
+                    </div>
+                    <div class="settings">
+                        <div class="block block-fill">
+                            <div class="block-title">Paramètres</div>
+                            <div class="container">
+                                <div class="setting"><a class="btn" id="execute">Générer</a></div>
+                                <!-- ■■■ SWITCH RAZEL-BEC (coché par défaut) ■■■ -->
+                                <div class="setting" id="switch_razel">
+                                    <label class="switcher">
+                                        <input type="checkbox" id="razel-switch">
+                                        <div class="toggle"></div>
+                                        <span>Charte graphique Razel-Bec</span>
+                                    </label>
+                                </div>
+                                <!-- ■■■ FIN SWITCH RAZEL-BEC ■■■ -->
+                                <div class="setting"><label class="switcher"><input type="checkbox" value="1"
+                                            id="auto-update" checked>
+                                        <div class="toggle"></div><span>Mise à jour automatique</span>
+                                    </label></div>
+                                <div class="setting"><label class="switcher"><input type="checkbox" value="1"
+                                            id="remember-input">
+                                        <div class="toggle"></div><span>Sauvegarder les paramètres</span>
+                                    </label></div>
+                                <details class="setting-group" open>
+                                    <summary>Principal</summary>
+                                    <div class="setting"><label for="type">Type</label><select id="type"
+                                            data-remember="type" data-share="type" data-auto-update>
+                                            <option value="png">PNG</option>
+                                            <option value="jpeg">JPG</option>
+                                            <option value="svg">SVG</option>
+                                            <option value="webp">WEBP</option>
+                                        </select></div>
+                                    <div class="setting"><label for="size">Taille</label><input type="number" id="size"
+                                            data-option="size" data-remember="size" data-share="size" value="256"
+                                            step="1" min="64" max="2000"></div>
+                                    <div class="setting"><label for="padding">Remplissage</label><input type="number"
+                                            id="padding" data-option="padding" data-remember="padding"
+                                            data-share="padding" value="16" step="1" min="0" max="2000"></div>
+                                    <div class="setting"><label for="ec">Correction d'erreur</label><select id="ec"
+                                            data-remember="ec" data-share="ec" data-auto-update>
+                                            <option value="L">L</option>
+                                            <option value="M">M</option>
+                                            <option value="Q" selected>Q</option>
+                                            <option value="H">H</option>
+                                        </select></div>
+                                </details>
+                                <details class="setting-group" open>
+                                    <summary>Point</summary>
+                                    <div class="setting"><label for="dot-option-type">Type</label><select
+                                            id="dot-option-type" data-option="dotoption-type"
+                                            data-remember="dotoption-type" data-share="dot_option_type">
+                                            <option value="square" selected>Carré</option>
+                                            <option value="rounded">Arrondi</option>
+                                            <option value="extra-rounded">Extra arrondi</option>
+                                            <option value="dots">Point</option>
+                                            <option value="classy">Classe</option>
+                                            <option value="classy-rounded">Classe arrondi</option>
+                                        </select></div>
+                                    <div class="setting"><label for="dot-option-color-type">Type de
+                                            couleur</label><select id="dot-option-color-type"
+                                            data-option="dotoption-color-type" data-remember="dotoption-color-type"
+                                            data-share="dot_option_color_type" data-toggle="color-type">
+                                            <option value="">Couleur Unique</option>
+                                            <option value="linear">Gradient linéaire</option>
+                                            <option value="radial">Gradient radial</option>
+                                        </select></div>
+                                    <div class="setting color-block"><label for="dot-option-color">Couleur</label>
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false" value="#000" id="dot-option-color"
+                                                data-option="dot-option-color" data-remember="dot-option-color"
+                                                data-share="dot_option_color">
+                                        </div>
+                                    </div>
+                                    <div class="setting grapick-block"><label
+                                            for="dot-option-gradient-color">Couleur</label><input
+                                            value="[[10,&quot;#000&quot;],[90,&quot;#49b1f5&quot;]]"
+                                            data-toggle="grapick" id="dot-option-gradient-color"
+                                            data-option="dot-option-gradient-color"
+                                            data-remember="dot-option-gradient-color"
+                                            data-share="dot_option_gradient_color">
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false">
+                                        </div>
+                                    </div>
+                                    <div class="setting rotation-block"><label
+                                            for="dot-option-rotation">Rotation</label><input type="number"
+                                            id="dot-option-rotation" data-option="dot-option-rotation"
+                                            data-remember="dot-option-rotation" data-share="dot_option_rotation"
+                                            value="0" step="1" min="-180" max="180"></div>
+                                </details>
+                                <details class="setting-group" open>
+                                    <summary>Carré dans les coins</summary>
+                                    <div class="setting"><label for="corners-square-option-type">Type</label><select
+                                            id="corners-square-option-type" data-option="corners-squareoption-type"
+                                            data-remember="corners-squareoption-type"
+                                            data-share="corners_square_option_type">
+                                            <option value="square">Carré</option>
+                                            <option value="dot">Rond</option>
+                                            <option value="extra-rounded">Arrondi</option>
+                                        </select></div>
+                                    <div class="setting"><label for="corners-square-option-color-type">Type de
+                                            couleur</label><select id="corners-square-option-color-type"
+                                            data-option="corners-squareoption-color-type"
+                                            data-remember="corners-squareoption-color-type"
+                                            data-share="corners_square_option_color_type" data-toggle="color-type">
+                                            <option value="">Couleur Unique</option>
+                                            <option value="linear">Gradient linéaire</option>
+                                            <option value="radial">Gradient radial</option>
+                                        </select></div>
+                                    <div class="setting color-block"><label
+                                            for="corners-square-option-color">Color</label>
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false" value="#000"
+                                                id="corners-square-option-color"
+                                                data-option="corners-square-option-color"
+                                                data-remember="corners-square-option-color"
+                                                data-share="corners_square_option_color">
+                                        </div>
+                                    </div>
+                                    <div class="setting grapick-block"><label
+                                            for="corners-square-option-gradient-color">Couleur</label><input
+                                            value="[[10,&quot;#000&quot;],[90,&quot;#49b1f5&quot;]]"
+                                            data-toggle="grapick" id="corners-square-option-gradient-color"
+                                            data-option="corners-square-option-gradient-color"
+                                            data-remember="corners-square-option-gradient-color"
+                                            data-share="corners_square_option_gradient_color">
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false">
+                                        </div>
+                                    </div>
+                                    <div class="setting rotation-block"><label
+                                            for="corners-square-option-rotation">Rotation</label><input type="number"
+                                            id="corners-square-option-rotation"
+                                            data-option="corners-square-option-rotation"
+                                            data-remember="corners-square-option-rotation"
+                                            data-share="corners_square_option_rotation" value="0" step="1" min="-180"
+                                            max="180"></div>
+                                </details>
+                                <details class="setting-group" open>
+                                    <summary>Point dans les coins</summary>
+                                    <div class="setting"><label for="corners-dot-option-type">Type</label><select
+                                            id="corners-dot-option-type" data-option="corners-dotoption-type"
+                                            data-remember="corners-dotoption-type" data-share="corners_dot_option_type">
+                                            <option value="square">Carré</option>
+                                            <option value="dot">Rond</option>
+                                        </select></div>
+                                    <div class="setting"><label for="corners-dot-option-color-type">Type de
+                                            couleur</label><select id="corners-dot-option-color-type"
+                                            data-option="corners-dotoption-color-type"
+                                            data-remember="corners-dotoption-color-type"
+                                            data-share="corners_dot_option_color_type" data-toggle="color-type">
+                                            <option value="">Couleur Unique</option>
+                                            <option value="linear">Gradient linéaire</option>
+                                            <option value="radial">Gradient radial</option>
+                                        </select></div>
+                                    <div class="setting color-block"><label
+                                            for="corners-dot-option-color">Couleur</label>
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false" value="#000" id="corners-dot-option-color"
+                                                data-option="corners-dot-option-color"
+                                                data-remember="corners-dot-option-color"
+                                                data-share="corners_dot_option_color">
+                                        </div>
+                                    </div>
+                                    <div class="setting grapick-block"><label
+                                            for="corners-dot-option-gradient-color">Couleur</label><input
+                                            value="[[10,&quot;#000&quot;],[90,&quot;#49b1f5&quot;]]"
+                                            data-toggle="grapick" id="corners-dot-option-gradient-color"
+                                            data-option="corners-dot-option-gradient-color"
+                                            data-remember="corners-dot-option-gradient-color"
+                                            data-share="corners_dot_option_gradient_color">
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false">
+                                        </div>
+                                    </div>
+                                    <div class="setting rotation-block"><label
+                                            for="corners-dot-option-rotation">Rotation</label><input type="number"
+                                            id="corners-dot-option-rotation" data-option="corners-dot-option-rotation"
+                                            data-remember="corners-dot-option-rotation"
+                                            data-share="corners_dot_option_rotation" value="0" step="1" min="-180"
+                                            max="180"></div>
+                                </details>
+                                <details class="setting-group" open>
+                                    <summary>Arrière-plan</summary>
+                                    <div class="setting"><label for="background-option-color-type">Type de
+                                            couleur</label><select id="background-option-color-type"
+                                            data-option="backgroundoption-color-type"
+                                            data-remember="backgroundoption-color-type"
+                                            data-share="background_option_color_type" data-toggle="color-type">
+                                            <option value="">Couleur Unique</option>
+                                            <option value="linear">Gradient linéaire</option>
+                                            <option value="radial">Gradient radial</option>
+                                        </select></div>
+                                    <div class="setting color-block"><label for="background-option-color">Color</label>
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false" value="#fff" id="background-option-color"
+                                                data-option="background-option-color"
+                                                data-remember="background-option-color"
+                                                data-share="background_option_color">
+                                        </div>
+                                    </div>
+                                    <div class="setting grapick-block"><label
+                                            for="background-option-gradient-color">Color</label><input
+                                            value="[[10,&quot;#49b1f5&quot;],[90,&quot;#fff&quot;]]"
+                                            data-toggle="grapick" id="background-option-gradient-color"
+                                            data-option="background-option-gradient-color"
+                                            data-remember="background-option-gradient-color"
+                                            data-share="background_option_gradient_color">
+                                        <div class="color-input">
+                                            <div class="color-wrapper">
+                                                <div class="color"></div>
+                                            </div><input spellcheck="false">
+                                        </div>
+                                    </div>
+                                    <div class="setting rotation-block"><label
+                                            for="background-option-rotation">Rotation</label><input type="number"
+                                            id="background-option-rotation" data-option="background-option-rotation"
+                                            data-remember="background-option-rotation"
+                                            data-share="background_option_rotation" value="0" step="1" min="-180"
+                                            max="180"></div>
+                                </details>
+                                <details class="setting-group" open>
+                                    <summary>Image</summary>
+                                    <div class="setting"><label for="image-type">Type</label><select id="image-type"
+                                            data-option="image-type" data-remember="image-type" data-share="image_type">
+                                            <option value="file">Fichier</option>
+                                            <option value="url">URL</option>
+                                        </select></div>
+                                    <div class="setting" id="url-block"><label for="image">URL</label><input type="text"
+                                            id="image" data-option="image" data-remember="image" data-share="image"
+                                            placeholder="URL"></div>
+                                    <div class="setting" id="file-block" style="display:none"><label
+                                            for="image-file">Fichier</label>
+                                        <div class="droppable-zone"><input class="droppable-file" type="file"
+                                                id="image-file" data-option="image-file" accept="image/*">
+                                            <div class="droppable-zone-wrapper"><img class="droppable-zone-icon"
+                                                    src="/images/file.svg" alt="File">
+                                                <div class="droppable-zone-text">Glisser et déposer le fichier ici ou
+                                                    cliquez pour sélectionnez
+                                                    un fichier. Il sera traité localement et ne sera pas téléchargé.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="setting"><label for="image-size">Taille</label><input id="image-size"
+                                            type="range" value="0.4" step="0.1" min="0.1" max="0.5"
+                                            data-option="image-size" data-remember="image-size" data-share="image_size">
+                                    </div>
+                                    <div class="setting"><label for="image-margin">Marges</label><input type="number"
+                                            id="image-margin" data-option="image-margin" data-remember="image-margin"
+                                            data-share="image_margin" value="0" step="1" min="0" max="20"></div>
+                                    <div class="setting"><label class="switcher"><input type="checkbox" value="1"
+                                                id="image-show-background" data-option="image-show-background"
+                                                data-remember="image-show-background"
+                                                data-share="image_show_background">
+                                            <div class="toggle"></div><span>Afficher les points en arrière plan</span>
+                                        </label></div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <script>
+                    // On récupère directement la checkbox existante (id="razel-switch")
+                    const razelCheckbox = document.getElementById('razel-switch');
+
+                    // Fonction qui applique les valeurs par défaut
+                    function applyRazelDefaults() {
+                        // Paramètres principaux
+                        document.getElementById('type').value = 'png';
+                        document.getElementById('size').value = '256';
+                        document.getElementById('padding').value = '10';
+                        document.getElementById('ec').value = 'Q';
+
+                        // Dot
+                        document.getElementById('dot-option-type').value = 'square';
+                        document.getElementById('dot-option-color-type').value = '';
+                        document.getElementById('dot-option-color').value = 'rgb(4,92,171)';
+
+                        // Corners Square
+                        document.getElementById('corners-square-option-type').value = 'extra-rounded';
+                        document.getElementById('corners-square-option-color-type').value = '';
+                        document.getElementById('corners-square-option-color').value = 'rgb(251,211,5)';
+
+                        // Corners Dot
+                        document.getElementById('corners-dot-option-type').value = 'square';
+                        document.getElementById('corners-dot-option-color-type').value = '';
+                        document.getElementById('corners-dot-option-color').value = 'rgb(251,211,5)';
+
+                        // Background
+                        document.getElementById('background-option-color-type').value = '';
+                        document.getElementById('background-option-color').value = '#fff';
+
+                        // Image
+                        const selectImageType = document.getElementById('image-type');
+                        selectImageType.value = 'url';
+                        // Affiche le bloc URL et masque le bloc Fichier
+                        document.getElementById('url-block').style.display = 'block';
+                        document.getElementById('file-block').style.display = 'none';
+                        document.getElementById('image').value = 'https://fayat.com/build/images/logo-fayat-diamond.png';
+                        document.getElementById('image-size').value = '0.5';
+                        document.getElementById('image-margin').value = '5';
+                    }
+
+                    // Quand l'utilisateur clique ou change l'état de la checkbox, on applique les valeurs
+                    razelCheckbox.addEventListener('change', () => {
+                        if (razelCheckbox.checked) {
+                            applyRazelDefaults();
+                        }
+                        // Si vous voulez qu'au décochage on restaure d'autres valeurs, ajoutez le code ici.
+                    });
+                </script>
+
+
+
+                <script>++waitLoadCount;
+                    delayScripts.push({
+                        src: 'js/qrcode.js?v=8',
+                        onload: function () {
+                            window.method = withOptions(generate, []);
+                            methodLoad();
+                        }
+                    });</script>
+                <script>++waitLoadCount;
+                    delayScripts.push({
+                        src: 'js/url-blob.js?v=1',
+                        onload: function () {
+                            methodLoad();
+                        }
+                    });</script>
+                <script>++waitLoadCount;
+                    delayScripts.push({
+                        src: 'js/droppable-file.js?v=10',
+                        onload: function () {
+                            methodLoad();
+                        }
+                    });</script>
+                <script>++waitLoadCount;
+                    delayScripts.push({
+                        src: 'js/qr-code-styling.js',
+                        onload: function () {
+                            methodLoad();
+                        }
+                    });</script>
+                <script>++waitLoadCount;
+                    delayScripts.push({
+                        src: 'https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js',
+                        onload: function () {
+                            methodLoad();
+                        }
+                    });</script>
+                <script>++waitLoadCount;
+                    delayScripts.push({
+                        src: 'https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/colors.min.js',
+                        onload: function () {
+                            methodLoad();
+                        }
+                    });</script>
+                <script>++waitLoadCount;
+                    delayScripts.push({
+                        src: 'https://artf.github.io/grapick/dist/grapick.min.js',
+                        onload: function () {
+                            methodLoad();
+                        }
+                    });</script>
+                <script>delayScripts.push({
+                        src: 'js/clipboard.min.js',
+                        onload: function () {
+                            new ClipboardJS('[data-toggle="copy"]').on('success', function (e) {
+                                showMessage(e.trigger.getAttribute('data-message'));
+                                gtag('event', 'copy');
+                            });
+                        },
+                        delay: 100
+                    });</script>
+            </main>
+        </div>
+        <div id="message"></div>
+    </div>
+    <script src="https://code.jquery.com/jquery-1.10.1.min.js" defer></script>
+    <script src="js/main.js?v=41" defer></script>
+</body>
+
+</html>
