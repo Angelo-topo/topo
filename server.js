@@ -19,7 +19,7 @@ app.get('/list-chantier', (req, res) => {
   });
 });
 
-app.use('/chantiers', express.static(path.join(__dirname, 'chantiers')));
+app.use('/menu', express.static(path.join(__dirname, 'chantiers')));
 
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
