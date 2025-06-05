@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Liste des fichiers chantier</title>
+</head>
+<body>
+  <h1>Fichiers disponibles dans /chantier</h1>
+  <div id="liste-fichiers"></div>
+
+  <script>
+    fetch('/list-chantier')
+      .then(response => response.json())
+      .then(fichiers => {
+        const div = document.getElementById('liste-fichiers');
+        fichiers.forEach(nom => {
+          const lien = document.createElement('a');
+          lien.href = `chantier/${nom}`;
+          lien.textContent = nom;
+          lien.style.display = 'block';
+          div.appendChild(lien);
+        });
+      })
+      .catch(console.error);
+  </script>
+</body>
+</html>
